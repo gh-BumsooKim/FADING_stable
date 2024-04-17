@@ -1,38 +1,40 @@
-# FADING
+# FADING_stable
 
-## Dataset
-The FFHQ-Aging Dataset used for training FADING could be downloaded from https://github.com/royorel/FFHQ-Aging-Dataset
+*stable-version about diffusers-library of FADING based on [official FADING repository by MunchkinChen](https://github.com/MunchkinChen/FADING)*
 
-## Training (Specialization)
+## 🔥 Updates
+- 24-04-17 : Add stability about diffusers library version without downgrading
+  - Error : is KeyError like `KeyError:'down_cross'` about upper version than diffusers 0.10.0.
+  - Mention : was issued in [issue #2](https://github.com/MunchkinChen/FADING/issues/2).
+  - Reason : occured in prompt2prompt library mentioned in [issue #57](https://github.com/google/prompt-to-prompt/issues/57#issuecomment-1613729431).
+  - Solution : is following [anvilarth comments](https://github.com/google/prompt-to-prompt/issues/57#issuecomment-1613729431).
 
-### Available pretrained weights
-We release weights of our specialized model at https://drive.google.com/file/d/1galwrcHq1HoZNfOI4jdJJqVs5ehB_dvO/view?usp=share_link
+## 🤗 Run FADING with FFHQ sample:
 
-### Train a new model
+### 01. Downlaod pre-trained model
 
-```shell
-accelerate launch specialize_general.py \
---instance_data_dir 'specialization_data/training_images' \
---instance_age_path 'specialization_data/training_ages.npy' \
---output_dir <PATH_TO_SAVE_MODEL> \
---max_train_steps 150
+Download release weigths from official repository [here](https://github.com/MunchkinChen/FADING#available-pretrained-weights), and unzip the downloaded zip file.
+
+Unzipped folder should be located as:
 ```
-Training images should be saved at `specialization_data/training_images`. The training set is described through `training_ages.npy` that contains the age of the training images.
-```angular2html
-array([['00007.jpg', '1'],
-       ['00004.jpg', '35'],
-        ...
-       ['00009.jpg', '35']], dtype='<U21')
+FADING-stable
+├───finetune_double_prompt_150_random # this is unzipped pre-trained model folder
+...
 ```
 
-## Inference (Age Editing)
+### 02. Run face editing
 
-```shell
-python age_editing.py \
---image_path <PATH_TO_INPUT_IMAGE> \
---age_init <INITIAL_AGE> \
---gender <female|male> \
---save_aged_dir <OUTPUT_DIR> \
---specialized_path  <PATH_TO_SPECIALIZED_MODEL> \
---target_ages 10 20 40 60 80
+For test, all the things (input image, target age, gender and so on) is pre-allocated in shell file. You can easily run FADING with prepared code as:
+
 ```
+sh run_FADING.sh
+```
+
+### 03. Outputs
+
+you can see the results in `./output_samples/[FILE_NAME]_[TARGET_AGE].png`
+
+
+## ETC
+
+For details, please refer the [official repository](https://github.com/MunchkinChen/FADING).

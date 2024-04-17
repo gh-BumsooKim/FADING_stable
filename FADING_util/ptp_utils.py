@@ -19,6 +19,10 @@ import cv2
 from typing import Optional, Union, Tuple, List, Callable, Dict
 from IPython.display import display
 from tqdm.notebook import tqdm
+import diffusers
+
+# managed by this
+DIFFUSERS_OLD = diffusers.__version__ < '0.11' 
 
 
 def text_under_image(image: np.ndarray, text: str, text_color: Tuple[int, int, int] = (0, 0, 0)):
@@ -173,6 +177,75 @@ def init_latent(latent, model, height, width, generator, batch_size):
 
 def register_attention_control(model, controller):
     def ca_forward(self, place_in_unet):
+        if DIFFUSERS_OLD:
+            return ca_forward_old(self, place_in_unet)
+        else:
+            return ca_forward_new(self, place_in_unet)
+    
+    def ca_forward_new(self, place_in_unet):
+        to_out = self.to_out
+        if type(to_out) is torch.nn.modules.container.ModuleList:
+            to_out = self.to_out[0]
+        else:
+            to_out = self.to_out
+        
+        def forward(hidden_states, encoder_hidden_states=None, attention_mask=None,temb=None,):
+            is_cross = encoder_hidden_states is not None
+            
+            residual = hidden_states
+
+            if self.spatial_norm is not None:
+                hidden_states = self.spatial_norm(hidden_states, temb)
+
+            input_ndim = hidden_states.ndim
+
+            if input_ndim == 4:
+                batch_size, channel, height, width = hidden_states.shape
+                hidden_states = hidden_states.view(batch_size, channel, height * width).transpose(1, 2)
+
+            batch_size, sequence_length, _ = (
+                hidden_states.shape if encoder_hidden_states is None else encoder_hidden_states.shape
+            )
+            attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)
+
+            if self.group_norm is not None:
+                hidden_states = self.group_norm(hidden_states.transpose(1, 2)).transpose(1, 2)
+
+            query = self.to_q(hidden_states)
+
+            if encoder_hidden_states is None:
+                encoder_hidden_states = hidden_states
+            elif self.norm_cross:
+                encoder_hidden_states = self.norm_encoder_hidden_states(encoder_hidden_states)
+
+            key = self.to_k(encoder_hidden_states)
+            value = self.to_v(encoder_hidden_states)
+
+            query = self.head_to_batch_dim(query)
+            key = self.head_to_batch_dim(key)
+            value = self.head_to_batch_dim(value)
+
+            attention_probs = self.get_attention_scores(query, key, attention_mask)
+            attention_probs = controller(attention_probs, is_cross, place_in_unet)
+
+            hidden_states = torch.bmm(attention_probs, value)
+            hidden_states = self.batch_to_head_dim(hidden_states)
+
+            # linear proj
+            hidden_states = to_out(hidden_states)
+
+            if input_ndim == 4:
+                hidden_states = hidden_states.transpose(-1, -2).reshape(batch_size, channel, height, width)
+
+            if self.residual_connection:
+                hidden_states = hidden_states + residual
+
+            hidden_states = hidden_states / self.rescale_output_factor
+
+            return hidden_states
+        return forward
+    
+    def ca_forward_old(self, place_in_unet):
         to_out = self.to_out
         if type(to_out) is torch.nn.modules.container.ModuleList:
             to_out = self.to_out[0]
@@ -220,7 +293,9 @@ def register_attention_control(model, controller):
         controller = DummyController()
 
     def register_recr(net_, count, place_in_unet):
-        if net_.__class__.__name__ == 'CrossAttention':
+        _attention_class = 'CrossAttention' if DIFFUSERS_OLD else 'Attention'
+        
+        if net_.__class__.__name__ == _attention_class:
             net_.forward = ca_forward(net_, place_in_unet)
             return count + 1
         elif hasattr(net_, 'children'):
