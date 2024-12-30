@@ -42,4 +42,4 @@ you can see the results in `./output_samples/[FILE_NAME]_[TARGET_AGE].png`
 
 ## ETC
 
-For details, please refer the [official repository](https://github.com/MunchkinChen/FADING).
+For detailed instructions or training commands, please refer the [official repository](https://github.com/MunchkinChen/FADING).
