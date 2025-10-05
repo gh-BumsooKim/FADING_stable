@@ -17,14 +17,37 @@
 
 ## 🤗 Run FADING with FFHQ sample:
 
+
+### 00. Settings
+
+```cmd
+# repo
+git clone https://github.com/gh-BumsooKim/FADING_stable
+
+# venv
+conda create -n FADING python==3.10.18
+conda activate FADING
+pip install -r requirements.txt
+```
+
 ### 01. Downlaod pre-trained model
 
 Download release weigths from official repository [here](https://github.com/MunchkinChen/FADING#available-pretrained-weights), and unzip the downloaded zip file.
+```cmd
+# pretrained weigth (make sure pip install gdown)
+gdown 1galwrcHq1HoZNfOI4jdJJqVs5ehB_dvO
+
+# unzip
+unzip finetune_double_prompt_150_random.zip
+rm finetune_double_prompt_150_random.zip 
+```
 
 Unzipped folder should be located as:
 ```
-FADING-stable
-├───finetune_double_prompt_150_random # this is unzipped pre-trained model folder
+FADING_stable
+├───FADING_util
+├───finetune_double_prompt_150_random # this is the unzipped pre-trained model folder
+├───input_sample
 ...
 ```
 
