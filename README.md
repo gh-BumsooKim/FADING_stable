@@ -3,6 +3,7 @@
 *stable-version about diffusers-library of FADING based on [official FADING repository by MunchkinChen](https://github.com/MunchkinChen/FADING)*
 
 ## 🔥 Updates
+- 25-10-05 : Add venv setting instruction
 - 25-06-22 : Add requirements.txt file
 - 24-04-18 : Add stability about accelerate library
   - Error : is unexpected keyword `logging_dir` in `Accelerator`
